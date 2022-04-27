@@ -1,0 +1,24 @@
+{
+  "name": "cake-shop",
+  "version": "1.0.0",
+  "description": "A Demo project with nodejs as backend and ReactJS as frontend",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "build": "cd client && npm i && npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/parrothacker1/Cake-Shop.git"
+  },
+  "keywords": [],
+  "author": "parrothacker1",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/parrothacker1/Cake-Shop/issues"
+  },
+  "homepage": "https://github.com/parrothacker1/Cake-Shop#readme",
+  "dependencies": {
+    "pg": "^8.7.3"
+  }
+}
