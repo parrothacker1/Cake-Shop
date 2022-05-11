@@ -1,5 +1,6 @@
 const http=require('http');
 const { Pool }=require('pg');
+const fs=require('fs');
 
 require('dotenv').config();
 
@@ -31,29 +32,84 @@ const server=http.createServer(async function (req,res) {
                 data=JSON.parse(Buffer.concat(body).toString());
             });
             auth=req.headers.authorization.split(" ").pop().split(":");
-            out={"result":true};
-            if (out["result"] && auth[0]=="user" && auth[1]=="password") {
-                status=201;
-            } else  if (auth[0]!="user" || auth[1] !="password"){
-                status=401;
+            auth[1]=auth[1].split("\n")[0];
+            if (auth[0]=="user" && auth[1]=="password") {
+                try {
+                    if (Object.keys(data) == ["name","price","stock"]) {
+                        let all_cakes=await pool.query("SELECT * FROM cake WHERE name=$1",[data.name]);
+                        if (!all_cakes.rows) {
+                            query="INSERT INTO cake VALUES($1,$2,'{1:0}',$3);";
+                            let q_data=await pool.query(query,[data.name,data.price,data.stock);
+                            out={"result":true};
+                        } else {
+                            status=304;
+                            out={"result":"already_exists"};
+                        }
+                    } else {
+                        status=400;
+                        out={"result":"wrong_data_given"};
+                    }
+                } catch(err) {
+                    status=500;
+                    out={"result":"server_error"};
+                }
             } else {
-                status=500;
+                status=401;
+                out={"result":"auth_error"};
             }
             res.writeHead(status,{"Content-Type":"application/json"});
             res.write(JSON.stringify(out));
-
+            
+        } else if (req.method=="PUT") {
+            status=200;
+            body=[];
+            data={};
+            req.on('data',(chunk) => {
+                body.push(chunk);
+            }).on('end',() => {
+                data=JSON.parse(Buffer.concat(body).toString());
+            });
+            auth=req.headers.authorization.split(" ").pop().split(":");
+            auth[1]=auth[1].split("\n")[0];
+            if (auth[0]=="user" && auth[1]=="password") {
+                try {
+                    if (Object.keys(data) == ["name","price","stock"]) {
+                        let all_cakes=await pool.query("SELECT * FROM cake WHERE name=$1",[data.name]);
+                        if (!all_cakes.rows) {
+                            status=304;
+                            out={"result":"cake_not_exists"};
+                        } else {
+                            query="UPDATE cake SET price=$2,stock=$3 WHERE name=$1";
+                            let q_data=await pool.query(query,[data.name,data.price,data.stock]);
+                            out={"result":true};
+                        }
+                    } else {
+                        status=400;
+                        out={"result":"wrong_data_given"};
+                    }
+                } catch(err) {
+                    status=500;
+                    out={"result":"server_error"};
+                }
+            } else {
+                status=401;
+                out={"result":"auth_error"};
+            }
+            res.writeHead(status,{"Content-Type":"application/json"});
+            res.write(JSON.stringify(out));
+            
         } else if (req.method=="GET") {
             status=200;
             response=null;
             try {
                 let out=await pool.query("SELECT * FROM cakes");
-                response=out.rows[0];
+                response={"cakes":out.rows[0]};
             } catch (err) {
                 status=500;
-                response=[];
+                response={"result":"server_error"};
             }
             res.writeHead(status,{'Content-Type':'application/json'});
-            res.write(JSON.stringify({'cakes':response}));
+            res.write(JSON.stringify(response));
 
         } else if (req.method=="DELETE") {
             status=410;
@@ -65,9 +121,24 @@ const server=http.createServer(async function (req,res) {
             auth=Buffer.from(req.headers.authorization.split(" ")[1],'base64').toString().split(":")
             auth[1]=auth[1].split("\n")[0];
             if (auth[0]=="user" && auth[1]=="password") {
+                status=200;
                 try {
-
+                    if (Object.keys(data) == ["name"]) {
+                        let all_cakes=await pool.query("SELECT * FROM cake WHERE name=$1",[data.name]);
+                        if (!all_cakes.rows) {
+                            status=304;
+                            out={"result":"cake_not_exists"};
+                        } else {
+                            query="DELETE FROM cake WHERE name=$1";
+                            let q_data=await pool.query(query,[data.name]);
+                            out={"result":true};
+                        }
+                    } else {
+                        status=400;
+                        out={"result":"wrong_data_given"};
+                    }
                 } catch(err) {
+                    status=500;
                     out={"result":"server_error"};
                 }
             } else {
@@ -111,10 +182,19 @@ const server=http.createServer(async function (req,res) {
             try {
                 let q_data=await pool.query("SELECT name,stock FROM cakes");
                 console.log(q_data);
-                if (Object.keys(data) != ["name","number"]) {
+                if (Object.keys(data) != ["name","quantity","rate"]) {
                     out={"result":"wrong_data_given"}
                 } else {
-                    out={"result":true}
+                    let all_cakes=await pool.query("SELECT * FROM cake WHERE name=$1",[data.name]);
+                    if (!all_cakes.rows) {
+                        status=304;
+                        out={"result":"cake_not_exists"};
+                    } else {
+                        stock=all_cakes.rows[0].stock-quantity;
+                        all_cakes.rows[0].rate.entries()[data.rate-1]=all_cakes.rows[0].rate.entries()[data.rate]+1
+                        let q_data=await pool.query("UPDATE cake SET stock=$2,rate=$3 WHERE name=$1",[data.name,stock,all_cakes.rows[0].rate]);
+                        out={"result":true}
+                    }
                 }
                 out={"result":true};
             } catch (err) {
@@ -129,7 +209,14 @@ const server=http.createServer(async function (req,res) {
         res.write(JSON.stringify(out));
 
     } else if (req.url.includes("/cake_pics")) {
-
+        file=req.url.split("/")[3];
+        if (fs.existsSync("../client/src/images/cakes/"+file) {
+            res.writeHead(200,{"Content-Type":"image/jpeg"});
+            res.write(fs.readFileSync("../client/src/images/cakes/"+file),'binary');
+        } else {
+            res.writeHead(200,{"Content-Type":"application/json"});
+            res.write(JSON.stringify({"result":"do_not_exists"}));
+        }
     }
     res.end();
 });
