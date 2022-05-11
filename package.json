@@ -4,8 +4,8 @@
   "description": "A Demo project with nodejs as backend and ReactJS as frontend",
   "main": "index.js",
   "scripts": {
-    "start": "node server/index.js",
-    "build": "cd client && npm i && npm run build"
+    "server": "node server/index.js",
+    "react": "cd client && npm i && npm run build"
   },
   "repository": {
     "type": "git",
@@ -19,6 +19,8 @@
   },
   "homepage": "https://github.com/parrothacker1/Cake-Shop#readme",
   "dependencies": {
+    "dotenv": "^16.0.0",
+    "node": "^17.7.2",
     "pg": "^8.7.3"
   }
 }
