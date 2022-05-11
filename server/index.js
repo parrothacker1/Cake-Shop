@@ -39,7 +39,7 @@ const server=http.createServer(async function (req,res) {
                         let all_cakes=await pool.query("SELECT * FROM cake WHERE name=$1",[data.name]);
                         if (!all_cakes.rows) {
                             query="INSERT INTO cake VALUES($1,$2,'{1:0}',$3);";
-                            let q_data=await pool.query(query,[data.name,data.price,data.stock);
+                            let q_data=await pool.query(query,[data.name,data.price,data.stock]);
                             out={"result":true};
                         } else {
                             status=304;
@@ -175,7 +175,7 @@ const server=http.createServer(async function (req,res) {
         }).on('end',() => {
             data=JSON.parse(Buffer.concat(body).toString());
         });
-        auth=Buffer.from(req.headers.authorization.split(" ")[1],'base64').toString().split(":");,
+        auth=Buffer.from(req.headers.authorization.split(" ")[1],'base64').toString().split(":");
         auth[1]=auth[1].split("\n")[0];
         if (auth[0]=="user" && auth[1]=="password") {
             status=201;
@@ -210,7 +210,7 @@ const server=http.createServer(async function (req,res) {
 
     } else if (req.url.includes("/cake_pics")) {
         file=req.url.split("/")[3];
-        if (fs.existsSync("../client/src/images/cakes/"+file) {
+        if (fs.existsSync("../client/src/images/cakes/"+file)) {
             res.writeHead(200,{"Content-Type":"image/jpeg"});
             res.write(fs.readFileSync("../client/src/images/cakes/"+file),'binary');
         } else {
