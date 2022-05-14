@@ -175,35 +175,27 @@ const server=http.createServer(async function (req,res) {
         }).on('end',() => {
             data=JSON.parse(Buffer.concat(body).toString());
         });
-        auth=Buffer.from(req.headers.authorization.split(" ")[1],'base64').toString().split(":");
-        auth[1]=auth[1].split("\n")[0];
-        if (auth[0]=="user" && auth[1]=="password") {
-            status=201;
-            try {
-                let q_data=await pool.query("SELECT name,stock FROM cakes");
-                console.log(q_data);
-                if (Object.keys(data) != ["name","quantity","rate"]) {
-                    out={"result":"wrong_data_given"}
+        try {
+            let q_data=await pool.query("SELECT name,stock FROM cakes");
+            console.log(q_data);
+            if (Object.keys(data) != ["name","quantity","rate"]) {
+                out={"result":"wrong_data_given"}
+            } else {
+                let all_cakes=await pool.query("SELECT * FROM cake WHERE name=$1",[data.name]);
+                if (!all_cakes.rows) {
+                    status=304;
+                    out={"result":"cake_not_exists"};
                 } else {
-                    let all_cakes=await pool.query("SELECT * FROM cake WHERE name=$1",[data.name]);
-                    if (!all_cakes.rows) {
-                        status=304;
-                        out={"result":"cake_not_exists"};
-                    } else {
-                        stock=all_cakes.rows[0].stock-quantity;
-                        all_cakes.rows[0].rate.entries()[data.rate-1]=all_cakes.rows[0].rate.entries()[data.rate]+1
-                        let q_data=await pool.query("UPDATE cake SET stock=$2,rate=$3 WHERE name=$1",[data.name,stock,all_cakes.rows[0].rate]);
-                        out={"result":true}
-                    }
+                    stock=all_cakes.rows[0].stock-quantity;
+                    all_cakes.rows[0].rate.entries()[data.rate-1]=all_cakes.rows[0].rate.entries()[data.rate]+1
+                    let q_data=await pool.query("UPDATE cake SET stock=$2,rate=$3 WHERE name=$1",[data.name,stock,all_cakes.rows[0].rate]);
+                    out={"result":true}
                 }
-                out={"result":true};
-            } catch (err) {
-                status=500;
-                out={"result":"server_error"};
             }
-        } else {
-            status=401;
-            out={"result":"auth_error"};
+            out={"result":true};
+        } catch (err) {
+            status=500;
+            out={"result":"server_error"};
         }
         res.writeHead(status,{"Content-Type":"application/json"});
         res.write(JSON.stringify(out));
