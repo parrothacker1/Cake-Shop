@@ -200,17 +200,7 @@ const server=http.createServer(async function (req,res) {
         res.writeHead(status,{"Content-Type":"application/json"});
         res.write(JSON.stringify(out));
 
-    } else if (req.url.includes("/cake_pics")) {
-        file=req.url.split("/")[3];
-        if (fs.existsSync("../client/src/images/cakes/"+file)) {
-            res.writeHead(200,{"Content-Type":"image/jpeg"});
-            res.write(fs.readFileSync("../client/src/images/cakes/"+file),'binary');
-        } else {
-            res.writeHead(200,{"Content-Type":"application/json"});
-            res.write(JSON.stringify({"result":"do_not_exists"}));
-        }
     }
-    res.end();
 });
 console.log("Backend Server Started");
 server.listen('8080');
